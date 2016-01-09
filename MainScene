@@ -1,0 +1,173 @@
+#ifndef _MainScene_H_
+#define _MainScene_H_
+
+#include "cocos2d.h"
+#include "FirstScene.h"
+#include "GameUI.h"
+#include "SecondScene.h"
+#include "ThirdScene.h"
+
+USING_NS_CC;
+class FirstScene;
+class SecondScene;
+class ThirdScene;
+class GameUI;
+class MainScene : public cocos2d::Scene
+{
+public:
+
+	virtual bool init();
+	FirstScene *_firstScene;
+	SecondScene *_secondScene;
+	ThirdScene *_thirdScene;
+	GameUI *_gameUI;
+	static cocos2d::Scene* _createScene();
+	CREATE_FUNC(MainScene);
+	void GetLevel(int level);	//得到当前关卡
+	bool isPlayEffect;
+	bool isPlayMusic;
+private:
+	virtual void update(float delta);
+	int _level;
+	int starNum;
+};
+
+
+#endif
+
+
+#include "MainScene.h"
+
+
+Scene* MainScene::_createScene()
+{
+	auto scene = Scene::create();
+	auto layer = MainScene::create();
+	scene->addChild(layer);
+	return scene;
+}
+
+bool MainScene::init()
+{
+	if (!Scene::init())
+	{
+		return false;
+	}
+
+	isPlayEffect = true;
+	isPlayMusic = true;
+	_level = 0;
+	return true;
+}
+
+void MainScene::update(float dt)
+{
+	switch (_level)
+	{
+	case 1:
+	{
+			  if (_secondScene->flag)
+			  {
+				  _gameUI->EndShowTime(); 
+				  _secondScene->GetTime(_gameUI->timeNow);
+			  }
+			  starNum = _secondScene->getStarNum();
+			  _gameUI->GetStarSum(starNum);
+			  
+			  if (_secondScene->isDialog == true)
+			  {
+				  _gameUI->dialog->setVisible(true);
+			  }
+			  else
+			  {
+				  _gameUI->dialog->setVisible(false);
+			  }
+
+	}
+		break;
+	case 2:
+	{
+			  if (_firstScene->flag==1)
+			  {
+				  _gameUI->EndShowTime();
+				  _firstScene->GetTime(_gameUI->timeNow);
+			  }
+			  starNum = _firstScene->getStarNum(); 
+			  _gameUI->GetStarSum(starNum);
+			  _firstScene->GetTime(_gameUI->timeNow);
+			  
+	}
+		break;
+	case 3:
+	{
+			  starNum = _thirdScene->getStarNum(); 
+			  _gameUI->GetStarSum(starNum);
+			  if (_thirdScene->isDialog3 == true)
+			  {
+				  _gameUI->dialog3->setVisible(true);
+			  }
+			  else
+			  {
+				  _gameUI->dialog3->setVisible(false);
+			  }
+			  if (_thirdScene->isDialog2 == true)
+			  {
+				  _gameUI->dialog2->setVisible(true);
+			  }
+			  else
+			  {
+				  _gameUI->dialog2->setVisible(false);
+			  }
+	} 
+		break;
+	default:
+		break;
+	}
+	
+}
+
+//得到选中的关卡
+void MainScene::GetLevel(int level)
+{
+	
+	_level = level;
+	switch (_level)
+	{
+	case 1:
+	{
+			  _secondScene = SecondScene::create();
+			  this->addChild(_secondScene);
+			  _secondScene->isPlayEffect = isPlayEffect;
+			  _secondScene->isPlayMusic = isPlayMusic;
+			  _gameUI = GameUI::create();
+			  addChild(_gameUI);
+			  this->scheduleUpdate();
+	}
+		break;
+	case 2:
+	{
+			  _firstScene = FirstScene::create();
+			  this->addChild(_firstScene);
+			  _firstScene->isPlayEffect = isPlayEffect;
+			  _firstScene->isPlayMusic = isPlayMusic;
+			  _gameUI = GameUI::create();
+			  addChild(_gameUI);
+			  this->scheduleUpdate();
+	}
+		break;
+	case 3:
+	{
+			  _thirdScene = ThirdScene::create();
+			  this->addChild(_thirdScene);
+			  _thirdScene->isPlayEffect = isPlayEffect;
+			  _thirdScene->isPlayMusic = isPlayMusic;
+			  _gameUI = GameUI::create();
+			  addChild(_gameUI);
+			  this->scheduleUpdate();
+	}
+		break;
+	default:
+		break;
+	}
+	
+}
