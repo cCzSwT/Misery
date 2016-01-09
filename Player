@@ -1,0 +1,58 @@
+#ifndef __PLAYER_H_
+#define __PLAYER_H_
+
+#include "cocos2d.h"
+#include "FirstScene.h"
+USING_NS_CC;
+
+class FirstScene;
+class player : public cocos2d::Node
+{
+public:
+	player();
+	~player();
+	CREATE_FUNC(player);
+
+	virtual bool init();
+	Sprite *m_sprite;
+
+
+	void bindSprite(CCSpriteFrame *_spriteFrame);
+	void setPlayerPosition(float x, float y);
+	//角色位置
+	float playerX;//x坐标
+	float playerY;
+
+
+private:
+	//FirstScene *_firstScene;
+};
+
+#endif
+
+
+#include "player.h"
+
+player::player(){}
+player::~player(){}
+
+bool player::init()
+{
+	m_sprite = Sprite::create();
+	return true;
+}
+
+void player::bindSprite(CCSpriteFrame *_spriteFrame)
+{
+	//确定player上下左右的图片
+	m_sprite->setDisplayFrame(_spriteFrame);
+	m_sprite->setPosition(playerX, playerY);
+	addChild(m_sprite);
+}
+
+void player::setPlayerPosition(float x,float y)
+{
+	m_sprite->setPosition(x, y);
+	playerX = x;
+	playerY = y;
+}
