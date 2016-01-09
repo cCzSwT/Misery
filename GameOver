@@ -1,0 +1,75 @@
+#ifndef __GameOver_H_
+#define __GameOver_H_
+#include "cocos2d.h"
+#include "cocostudio/CocoStudio.h"
+#include "ui/CocosGUI.h"
+#include "StartScene.h"
+
+USING_NS_CC;
+class StartScene;
+using namespace cocos2d::ui;
+class GameOver : public Scene
+{
+public:
+	CREATE_FUNC(GameOver);
+	virtual bool init();
+	static Scene* createScene();
+	
+	
+private:
+	void return_Start(Ref* pSender, Widget::TouchEventType type);
+	Button* returnBtn;
+};
+
+#endif
+
+
+
+#include "GameOver.h"
+
+Scene *GameOver::createScene()
+{
+	auto scene = Scene::create();
+	auto layer = GameOver::create();
+	scene->addChild(layer);
+	return scene;
+}
+
+bool GameOver::init()
+{
+	auto rootNode = CSLoader::createNode("csb/GameOverSce.csb");
+	addChild(rootNode);
+
+	returnBtn = dynamic_cast<Button*>(rootNode->getChildByName("Return_Start"));
+	returnBtn->addTouchEventListener(CC_CALLBACK_2(GameOver::return_Start, this));
+
+	return true;
+}
+
+void GameOver::return_Start(Ref* pSender, Widget::TouchEventType type)
+{
+
+	switch (type)
+	{
+
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+		auto _startScene = StartScene::create();
+		auto replaceScene = TransitionProgressRadialCW::create(2, _startScene);
+		Director::getInstance()->replaceScene(replaceScene);
+	}
+		break;
+
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+											 log("Cancel !");
+
+	}
+		break;
+	default:
+		break;
+	}
+}
