@@ -1,0 +1,190 @@
+#ifndef _GameUI_H_
+#define _GameUI_H_
+
+#include "cocos2d.h"
+#include "ui/CocosGUI.h"
+#include "cocostudio/CocoStudio.h"
+#include "FirstScene.h"
+#include "player.h";
+#include "SecondScene.h"
+using namespace cocos2d::ui;
+using namespace cocostudio::timeline;
+USING_NS_CC;
+
+class FirstScene;
+class SecondScene;
+class player;
+class GameUI : public cocos2d::Layer
+{
+public:
+
+	CREATE_FUNC(GameUI);
+	virtual bool init();
+	int starsum;
+	void LevelUI();
+
+	void GetLevel(int m_level);			//得到当前关卡
+	void GetStarSum(int star);			//得到星星总数
+	void EndShowTime();
+	void menuCloseCallback(cocos2d::Ref* pSender);
+
+	Text *dialog;
+	Text *dialog2;
+	Text *dialog3;
+	int timeNow;//时间
+private:
+	CCLabelAtlas *pNumLabl;
+	CCLabelAtlas *pNumStar;
+
+	FirstScene *_firstScene;
+	SecondScene *_secondScene;
+	Text *starNum;
+	Node *rootNode;
+	
+	
+	float labelPosx;//数字位置
+	float labelPosy;
+	//窗口位置
+	float windowX;
+	float windowY;
+	//星星总数
+	
+	//计时器
+	void timeCounter(float dt);		
+	bool musicChange;
+	Menu* pMenu;
+	player *_player;
+	//当前关卡
+	int _level;	
+};
+
+
+#endif
+
+#include "GameUI.h"
+
+
+bool GameUI::init()
+{
+	_level = 1;
+	starsum = 0;
+	
+	rootNode = CSLoader::createNode("csb/GameScene.csb");
+	addChild(rootNode);
+	Button *starImage = dynamic_cast<Button*>(rootNode->getChildByName("Star"));
+
+	dialog = dynamic_cast<Text*>(rootNode->getChildByName("dialog"));
+	dialog2 = dynamic_cast<Text*>(rootNode->getChildByName("dialog2"));
+	dialog3 = dynamic_cast<Text*>(rootNode->getChildByName("dialog3"));
+
+	windowX = 0;
+	windowY = 0;
+	labelPosx = 100;//数字显示位置
+	labelPosy = 100;
+
+	LevelUI();
+	//计时开始
+	timeNow = 0;
+	addChild(starImage);
+
+	addChild(dialog);
+	addChild(dialog2);
+	addChild(dialog3);
+	dialog->setVisible(false);
+	dialog2->setVisible(false);
+	dialog3->setVisible(false);
+
+	this->schedule(schedule_selector(GameUI::timeCounter), 0.01f);
+	this->scheduleUpdate();
+	return true;
+}
+
+void GameUI::GetLevel(int m_level)
+{
+	_level = m_level;
+}
+
+
+void GameUI::LevelUI()
+{
+	pNumLabl = CCLabelAtlas::create("0000", "fonts/fonts.plist");
+	//addChild(pNumLabl);
+	pNumLabl->setPosition(ccp(531,570));
+	addChild(pNumLabl, 1000, 1000);
+
+	pNumStar = CCLabelAtlas::create("0000", "fonts/fonts.plist");
+
+	addChild(pNumStar, 1000, 2000);
+
+	
+}
+
+////初始化保存界面
+//void GameUI::initSave()
+//{
+//	//存档需要的数据初始化
+//
+//	auto menuPosX = 650;
+//	auto menuPosY = 550;
+//
+//	//存档按钮
+//	auto saveItem = MenuItemImage::create(
+//		"rabbit.png",
+//		"rabbit.png",
+//		CC_CALLBACK_1(GameUI::menuCloseCallback, this));
+//	Label* label = Label::create("Save", "Arial", 30);
+//	MenuItemLabel* pLabelItem = MenuItemLabel::create(label);
+//	pMenu = Menu::create(saveItem, pLabelItem, NULL);
+//	pMenu->alignItemsVertically();
+//	pMenu->setPosition(Point(menuPosX, menuPosY));
+//	this->addChild(pMenu, 1000);
+//}
+
+void GameUI::timeCounter(float dt)
+{
+	timeNow = timeNow + 1;
+	CCLOG("%d", timeNow);
+
+
+	char StringStar[10];
+	sprintf(StringStar, "%d/7", starsum);//d前面的数字指的是占几位
+	CCLabelAtlas* pNumStar = static_cast<CCLabelAtlas *>(getChildByTag(2000));
+	pNumStar->setPosition(ccp(95,30));
+	pNumStar->setString(StringStar);
+
+	char StringOfNum[40];
+	sprintf(StringOfNum, "%04d", timeNow);//d前面的数字指的是占几位
+	CCLabelAtlas* pNumLabl = static_cast<CCLabelAtlas *>(getChildByTag(1000));
+	pNumLabl->setPosition(ccp(530, 570));
+	pNumLabl->setString(StringOfNum);
+}
+
+//void GameUI::readSave()
+//{
+//	_player->playerX = UserDefault::getInstance()->getFloatForKey("PlayerX");
+//	_player->playerY = UserDefault::getInstance()->getFloatForKey("PlayerY");
+//
+//	timeNow = UserDefault::getInstance()->getFloatForKey("TimeNow");
+//}
+
+void GameUI::menuCloseCallback(cocos2d::Ref* pSender)
+{
+	UserDefault::getInstance()->setFloatForKey("PlayerX", _player->playerX);
+	UserDefault::getInstance()->setFloatForKey("PlayerY", _player->playerY);
+
+	//计时
+	UserDefault::getInstance()->setFloatForKey("TimeNow", timeNow);
+	//星星
+}
+
+void GameUI::GetStarSum(int star)
+{
+	starsum = star;
+}
+
+
+void GameUI::EndShowTime()
+{
+	this->unschedule(schedule_selector(GameUI::timeCounter));
+	
+}
