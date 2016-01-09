@@ -1,0 +1,283 @@
+#ifndef __ChooseScene_H__
+#define __ChooseScene_H__
+
+#include "MainScene.h"
+#include "cocostudio/CocoStudio.h"
+#include "cocos2d.h"
+#include "ui/CocosGUI.h"
+#include "StartScene.h"
+using namespace cocos2d::ui;
+using namespace cocostudio::timeline;
+
+USING_NS_CC;
+class MainScene;
+class StartScene;
+class Music;
+class ChooseScene :public Scene{
+public:
+	static Scene * createScene();
+	virtual bool init();
+
+	CREATE_FUNC(ChooseScene);
+//	MainScene *_mainScene;
+	//选关按钮
+	Button* button_Level_1;
+	Button* button_Level_2;
+	Button* button_Level_3;
+	Button* returnBtn;
+	Node *rootNode;
+	//music
+	bool isPlayEffect;
+	bool isPlayMusic;
+	void LevelSelect_1(Ref* pSender, Widget::TouchEventType type);//响应关卡选择1
+	void LevelSelect_2(Ref* pSender, Widget::TouchEventType type);//响应关卡选择2
+	void LevelSelect_3(Ref* pSender, Widget::TouchEventType type);//响应关卡选择3
+	void return_Start(Ref* pSender, Widget::TouchEventType type);
+	virtual void update(float dt);	//监测鼠标移动位置
+
+private:
+	void onMouseMove(Event* event);	//监测鼠标移动
+	float MouseX;
+	float MouseY;
+	int m_level;					//关卡选择
+	Music *_music;
+};
+#endif
+
+
+#include "ChooseScene.h"
+
+Scene *ChooseScene::createScene()
+{
+	auto scene = Scene::create();
+	auto layer = ChooseScene::create();
+	scene->addChild(layer);
+	return scene;
+}
+
+bool ChooseScene::init()
+{
+	rootNode = CSLoader::createNode("csb/SelectSce.csb");
+	addChild(rootNode);
+	//音乐音效
+	_music = Music::create();
+	addChild(_music);
+	isPlayEffect = true;
+	isPlayMusic = true;
+
+	button_Level_1 = dynamic_cast<Button*>(rootNode->getChildByName("level1_select"));
+	button_Level_1->addTouchEventListener(CC_CALLBACK_2(ChooseScene::LevelSelect_1, this));
+
+	button_Level_2 = dynamic_cast<Button*>(rootNode->getChildByName("level2_select"));
+	button_Level_2->addTouchEventListener(CC_CALLBACK_2(ChooseScene::LevelSelect_2, this));
+
+	button_Level_3 = dynamic_cast<Button*>(rootNode->getChildByName("level3_select"));
+	button_Level_3->addTouchEventListener(CC_CALLBACK_2(ChooseScene::LevelSelect_3, this));
+
+	returnBtn = dynamic_cast<Button*>(rootNode->getChildByName("return_start"));
+	returnBtn ->addTouchEventListener(CC_CALLBACK_2(ChooseScene::return_Start, this));
+	
+
+
+	//创建鼠标监听
+	auto _mouseListener = EventListenerMouse::create();
+//	分发MouseMove事件
+	_mouseListener->onMouseMove = CC_CALLBACK_1(ChooseScene::onMouseMove, this);
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(_mouseListener, this);
+	this->scheduleUpdate();
+	return true;
+}
+
+void ChooseScene::update(float dt)
+{
+	//关卡1的按钮
+	auto rect1 = Rect(257, 426, 146, 82);
+	if (rect1.containsPoint(ccp(MouseX, MouseY)))
+	{
+		button_Level_1->loadTextureNormal("level/level1_select.png");
+
+	}
+	else
+	{
+		button_Level_1->loadTextureNormal("level/select1_normal.png");
+	}
+
+	//关卡2的按钮
+	auto rect2 = Rect(105, 289, 89, 113);
+	if (rect2.containsPoint(ccp(MouseX, MouseY)))
+	{
+		button_Level_2->loadTextureNormal("level/level2_select.png");
+
+	}
+	else
+	{
+		button_Level_2->loadTextureNormal("level/select2_normal.png");
+	}
+
+	//关卡3的按钮
+	auto rect3 = Rect(231, 83, 101, 108);
+	if (rect3.containsPoint(ccp(MouseX, MouseY)))
+	{
+		button_Level_3->loadTextureNormal("level/level3_select.png");
+
+	}
+	else
+	{
+		button_Level_3->loadTextureNormal("level/select3_normal.png");
+	}
+
+	auto rect4 = Rect(9, 530, 129, 159);
+	if (rect4.containsPoint(ccp(MouseX, MouseY)))
+	{
+		
+		returnBtn->loadTextureNormal("level/return_select_2.png");
+	}
+	else
+	{
+		
+		returnBtn->loadTextureNormal("level/return_select.png");
+	}
+}
+
+void ChooseScene::LevelSelect_1(Ref* pSender, Widget::TouchEventType type)
+{
+	
+	switch (type)
+	{
+
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+		_music->UIClick();
+		m_level = 1;
+		auto _mainScene = MainScene::create();
+		auto replaceScene = TransitionFadeBL::create(2,_mainScene);
+		//先更改音乐效果，再进入选关
+		_mainScene->isPlayEffect = isPlayEffect;
+		_mainScene->isPlayMusic = isPlayMusic;
+		_mainScene->GetLevel(m_level);
+		Director::getInstance()->replaceScene(replaceScene);
+		
+	}
+		break;
+
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+		log("Cancel !");
+		
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void ChooseScene::LevelSelect_2(Ref* pSender, Widget::TouchEventType type)
+{
+
+	switch (type)
+	{
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+		  _music->UIClick();
+		  m_level = 2;
+		  auto _mainScene = MainScene::create();
+		  auto replaceScene = TransitionFadeBL::create(2, _mainScene);
+		  _mainScene->isPlayMusic = isPlayMusic;
+		  _mainScene->isPlayEffect = isPlayEffect;
+		  _mainScene->GetLevel(m_level);
+		  Director::getInstance()->replaceScene(replaceScene);
+	}
+		break;
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+		 log("Cancel !");
+	
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void ChooseScene::LevelSelect_3(Ref* pSender, Widget::TouchEventType type)
+{
+
+	switch (type)
+	{
+		//按下按钮
+	case Widget::TouchEventType::BEGAN:
+	{
+										  log("Down !");
+	}
+		break;
+
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+		_music->UIClick();
+		m_level = 3;
+		auto _mainScene = MainScene::create();
+		auto replaceScene = TransitionFadeBL::create(2, _mainScene);
+		_mainScene->isPlayMusic = isPlayMusic;
+		_mainScene->isPlayEffect = isPlayEffect;
+		_mainScene->GetLevel(m_level);
+		Director::getInstance()->replaceScene(replaceScene);
+	}
+		break;
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+											 log("Cancel !");
+										
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void ChooseScene::return_Start(Ref* pSender, Widget::TouchEventType type)
+{
+
+	switch (type)
+	{
+
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+		_music->returnto();
+		auto _startScene= StartScene::create();
+		auto replaceScene = TransitionFadeTR::create(2, _startScene);
+		Director::getInstance()->replaceScene(replaceScene);
+	}
+		break;
+
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+		log("Cancel !");
+
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+//用了鼠标响应事件后，不能用CCLOG！！！！会出现无法解析的外部命令。可以使用log
+void ChooseScene::onMouseMove(Event* event)
+{
+	
+	EventMouse* e = (EventMouse*)event;
+	//目前鼠标的位置
+	MouseX = e->getCursorX();
+	MouseY = e->getCursorY();
+}
