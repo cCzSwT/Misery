@@ -1,0 +1,100 @@
+#ifndef _SUCCESS_H
+#define _SUCCESS_H
+
+#include "cocos2d.h"
+#include "cocostudio/CocoStudio.h"	//csloader
+#include "ui/CocosGUI.h"	
+#include "StartScene.h"
+
+USING_NS_CC;
+class StartScene;
+class Music;
+using namespace cocos2d::ui;//button
+class Success :public cocos2d::Scene
+{
+public:
+	
+	CREATE_FUNC(Success);
+	virtual bool init();
+	static Scene* createScene();
+private:
+	void return_Start(Ref* pSender, Widget::TouchEventType type);
+	void removeani();
+	Button* returnBtn;
+	Node *animaNode;
+};
+#endif
+
+
+#include "Success.h"
+
+Scene *Success::createScene()
+{
+	auto scene = Scene::create();
+	auto layer = Success::create();
+	scene->addChild(layer);
+	return scene;
+}
+
+bool Success::init()
+{
+	//四周六芒星
+	animaNode = CSLoader::createNode("csb/action.csb");
+	addChild(animaNode);
+	auto anima = CSLoader::createTimeline("csb/action.csb");	//播放帧动画
+	animaNode->runAction(anima);
+	anima->gotoFrameAndPlay(0, false);
+
+	CCActionInterval* delayaction = CCSequence::create(CCDelayTime::create(2.5),
+		CCCallFunc::create(this, callfunc_selector(Success::removeani)),
+		NULL
+		);
+	//中间六芒
+	auto rootNode = CSLoader::createNode("csb/Success.csb");
+	addChild(rootNode);
+	auto tl = CSLoader::createTimeline("csb/Success.csb");	//播放帧动画
+	rootNode->runAction(tl);
+	tl->gotoFrameAndPlay(0, true);
+	this->runAction(delayaction);
+
+	returnBtn = dynamic_cast<Button*>(rootNode->getChildByName("liumang"));
+	returnBtn->addTouchEventListener(CC_CALLBACK_2(Success::return_Start, this));
+
+	auto _music = Music::create();
+	_music->playSuccessMusic();
+
+	return true;
+}
+
+void Success::return_Start(Ref* pSender, Widget::TouchEventType type)
+{
+
+	switch (type)
+	{
+
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+		auto _startScene = StartScene::create();
+		auto replaceScene = TransitionProgressRadialCW::create(2, _startScene);
+		Director::getInstance()->replaceScene(replaceScene);
+	}
+		break;
+
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+		log("Cancel !");
+
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void Success::removeani()
+{
+	this->removeChild(animaNode);
+}
