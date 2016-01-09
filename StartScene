@@ -1,0 +1,393 @@
+#ifndef __StartScene_H__
+#define __StartScene_H__
+#include "ChooseScene.h"
+#include "Music.h"
+#include "cocostudio/CocoStudio.h"
+#include "cocos2d.h"
+#include "ui/CocosGUI.h"
+#include "SimpleAudioEngine.h"
+using namespace cocos2d::ui;
+using namespace cocostudio::timeline;
+USING_NS_CC;
+
+class Music;
+class StartScene :public Scene{
+public:
+	static Scene * createScene();	
+	CREATE_FUNC(StartScene);
+	virtual void update(float dt);	//监测鼠标移动位置
+	virtual bool init();
+
+	void Start(Ref* pSender, Widget::TouchEventType type);		//开始游戏	
+	void About(Ref* pSender, Widget::TouchEventType type);		//关于界面
+	void checkMusic(Ref* pSender, Widget::TouchEventType type);		//	音乐界面
+	void quit(Ref* pSender, Widget::TouchEventType type);			//离开界面
+	void HowToPlay(Ref* pSender, Widget::TouchEventType type);
+	void closeabout(Ref* pSender, Widget::TouchEventType type);
+	void onMouseMove(Event* event);	//监测鼠标移动
+	void closeall(Ref* pSender, Widget::TouchEventType type);
+
+private:
+	float MouseX;
+	float MouseY;
+
+	Button* button_start;
+	Button* button_about;
+	Button* button_music;
+	Button* button_help;
+	Button* button_close;
+	
+	Layer *startLayer;
+	Layer *UILayer;
+	Music *_music;
+	bool isPlayEffect;
+	bool isPlayMusic;
+};
+#endif
+
+
+//快捷键记录
+//shift+tab 左移
+//ctrl+f 查询
+//ctrl + k/c 注释 
+//ctrl + k/u 取消注释 
+
+#include "StartScene.h"
+
+Scene *StartScene::createScene()
+{
+	auto scene = Scene::create();
+	auto layer = StartScene::create();
+	scene->addChild(layer);
+	return scene;
+}
+
+bool StartScene::init()
+{
+
+	startLayer = Layer::create();	//创建开始界面层
+	addChild(startLayer);
+	auto rootNode = CSLoader::createNode("csb/MainScene.csb");
+	startLayer->addChild(rootNode);
+
+	//音乐音效设置
+	_music = Music::create();
+	addChild(_music);
+
+	isPlayEffect = true;
+	isPlayMusic = true;
+	
+	//通过按钮的名字获得按钮
+	//开始按钮
+	button_start = dynamic_cast<Button*>(rootNode->getChildByName("startBtn"));
+	button_start->addTouchEventListener(CC_CALLBACK_2(StartScene::Start, this));
+
+	//关于按钮
+	button_about = dynamic_cast<Button*>(rootNode->getChildByName("about_Btn"));
+	button_about->addTouchEventListener(CC_CALLBACK_2(StartScene::About, this));
+
+	//音效按钮
+	button_music = dynamic_cast<Button*>(rootNode->getChildByName("musicBtn"));
+	button_music->addTouchEventListener(CC_CALLBACK_2(StartScene::checkMusic, this));
+
+	//帮助按钮
+	button_help = dynamic_cast<Button*>(rootNode->getChildByName("helpBtn"));
+	button_help->addTouchEventListener(CC_CALLBACK_2(StartScene::HowToPlay, this));
+
+	//关闭按钮
+	button_close = dynamic_cast<Button*>(rootNode->getChildByName("closebtn"));
+	button_close->addTouchEventListener(CC_CALLBACK_2(StartScene::quit, this));
+
+	startLayer->addChild(button_start);
+	startLayer->addChild(button_about);
+	startLayer->addChild(button_music);
+	startLayer->addChild(button_help);
+	startLayer->addChild(button_close);
+
+	//创建鼠标监听
+	auto _mouseListener = EventListenerMouse::create();
+	//	分发MouseMove事件
+	_mouseListener->onMouseMove = CC_CALLBACK_1(StartScene::onMouseMove, this);
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(_mouseListener, this);
+	this->scheduleUpdate();
+
+	return true;
+}
+
+void StartScene::Start(Ref* pSender, Widget::TouchEventType type)
+{
+	
+	switch (type)
+	{
+		//按下按钮
+	case Widget::TouchEventType::BEGAN:
+	{
+										  log("Down !");
+	}
+		break;
+
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+		 log("Up !");
+		 auto chooseSce = ChooseScene::create();
+		 auto replaceScene = TransitionFadeBL::create(2,chooseSce);
+		 chooseSce->isPlayEffect = isPlayEffect;
+		 chooseSce->isPlayMusic = isPlayMusic;
+		 Director::getInstance()->replaceScene(replaceScene);
+										
+	}
+		break;
+
+		//在按钮上移动
+	case Widget::TouchEventType::MOVED:
+	{
+		 log("Move !");
+	}
+		break;
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+		log("Cancel !");
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void StartScene::quit(Ref* pSender, Widget::TouchEventType type)
+{
+	//Director::getInstance()->pushScene(TransitionSlideInT::create(3.0f,ChooseScene::createScene()));
+	switch (type)
+	{
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+										  UILayer = Layer::create();
+										  addChild(UILayer);
+										  auto _quit = CSLoader::createNode("csb/quit.csb");
+										  _quit->setPosition(ccp(0, 0));
+										  UILayer->addChild(_quit);
+										  _music->UIClick();			//播放声效
+
+										  //屏蔽下层点击事件
+										  UILayer->setTouchEnabled(true);
+										  UILayer->setSwallowsTouches(true);
+										  UILayer->setTouchMode(kCCTouchesOneByOne);
+
+										  auto colse_button = dynamic_cast<Button*>(_quit->getChildByName("close"));
+										  colse_button->addTouchEventListener(CC_CALLBACK_2(StartScene::closeabout, this));
+										  auto quit_button = dynamic_cast<Button*>(_quit-> getChildByName("quit"));
+										  quit_button->addTouchEventListener(CC_CALLBACK_2(StartScene::closeall, this));
+	}
+		break;
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+											 log("Cancel !");
+	}
+		break;
+	default:
+		break;
+	}
+}
+void StartScene::About(Ref* pSender, Widget::TouchEventType type)
+{
+	//Director::getInstance()->pushScene(TransitionSlideInT::create(3.0f,ChooseScene::createScene()));
+	switch (type)
+	{
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+		UILayer = Layer::create();
+		addChild(UILayer);
+		auto about = CSLoader::createNode("csb/about.csb");
+		about->setPosition(ccp(0, 0));
+		UILayer->addChild(about);
+		_music->UIClick();			//播放声效
+
+		//屏蔽下层点击事件
+		UILayer->setTouchEnabled(true);
+		UILayer->setSwallowsTouches(true);
+		UILayer->setTouchMode(kCCTouchesOneByOne);
+		
+		auto colse_button = dynamic_cast<Button*>(about->getChildByName("close"));
+		colse_button->addTouchEventListener(CC_CALLBACK_2(StartScene::closeabout, this));
+	}
+		break;
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+		log("Cancel !");
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void StartScene::checkMusic(Ref* pSender, Widget::TouchEventType type)
+{
+	//Director::getInstance()->pushScene(TransitionSlideInT::create(3.0f,ChooseScene::createScene()));
+	switch (type)
+	{
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+		_music->UIClick();			//播放声效
+		_music->SetScene(0);
+										
+	}
+		break;
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+											 log("Cancel !");
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void StartScene::HowToPlay(Ref* pSender, Widget::TouchEventType type)
+{
+	//Director::getInstance()->pushScene(TransitionSlideInT::create(3.0f,ChooseScene::createScene()));
+	switch (type)
+	{
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+		UILayer = Layer::create();
+		addChild(UILayer);
+		auto help = CSLoader::createNode("csb/howtoplay.csb");
+		help->setPosition(ccp(0, 0));
+		UILayer->addChild(help);
+		_music->UIClick();			//播放声效
+		//屏蔽下层点击事件
+		UILayer->setTouchEnabled(true);
+		UILayer->setSwallowsTouches(true);
+		UILayer->setTouchMode(kCCTouchesOneByOne);
+
+		auto colse_button = dynamic_cast<Button*>(help->getChildByName("close"));
+		colse_button->addTouchEventListener(CC_CALLBACK_2(StartScene::closeabout, this));
+
+	}
+		break;
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+		 log("Cancel !");
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+//关闭界面
+void StartScene::closeabout(Ref* pSender, Widget::TouchEventType type)
+{
+	//Director::getInstance()->pushScene(TransitionSlideInT::create(3.0f,ChooseScene::createScene()));
+	switch (type)
+	{
+
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+		_music->UIClick();			//播放声效
+		this->removeChild(UILayer);
+	}
+		break;
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+		log("Cancel !");
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void StartScene::update(float dt)
+{
+
+	//开始按钮
+
+	auto rect = Rect(222, 434, 65, 65);
+	if (rect.containsPoint(ccp(MouseX, MouseY)))
+	{
+		button_start->loadTextureNormal("startbutton/button_center_select.png");
+	}
+	else
+	{
+		button_start->loadTextureNormal("startbutton/button_center.png");
+	}
+
+	//关于按钮（左下）
+	auto rect1 = Rect(182, 334, 71, 66);
+	if (rect1.containsPoint(ccp(MouseX, MouseY)))
+	{
+		button_about->loadTextureNormal("startbutton/button_leftdown_select.png");
+	}
+	else
+	{
+		button_about->loadTextureNormal("startbutton/button_leftdown.png");
+	}
+
+	//音效按钮（左上）
+	auto rect2 = Rect(105, 472, 65, 80);
+	if (rect2.containsPoint(ccp(MouseX, MouseY)))
+	{
+		button_music->loadTextureNormal("startbutton/button_leftup_select.png");
+	}
+	else
+	{
+		button_music->loadTextureNormal("startbutton/button_leftup.png");
+	}
+
+	//帮助按钮（右上）
+	auto rect3 = Rect(265, 551, 61, 58);
+	if (rect3.containsPoint(ccp(MouseX, MouseY)))
+	{
+		button_help->loadTextureNormal("startbutton/button_rightup_select.png");
+	}
+	else
+	{
+		button_help->loadTextureNormal("startbutton/button_rightup.png");
+	}
+
+	//关闭按钮（右下）
+	auto rect4 = Rect(337, 405, 37, 58);
+	if (rect4.containsPoint(ccp(MouseX, MouseY)))
+	{
+		button_close->loadTextureNormal("startbutton/button_rightdown_select.png");
+	}
+	else
+	{
+		button_close->loadTextureNormal("startbutton/button_rightdown.png");
+	}
+	isPlayEffect = _music->isPlayEffectMusic;
+	isPlayMusic = _music->isPlay;
+	
+}
+
+//用了鼠标响应事件后，不能用CCLOG！！！！会出现无法解析的外部命令。可以使用log
+void StartScene::onMouseMove(Event* event)
+{
+	EventMouse* e = (EventMouse*)event;
+	//目前鼠标的位置
+	MouseX = e->getCursorX();
+	MouseY = e->getCursorY();
+}
+
+void StartScene::closeall(Ref* pSender, Widget::TouchEventType type)
+{
+	CCDirector::getInstance()->end();
+}
