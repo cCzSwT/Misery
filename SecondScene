@@ -1,0 +1,385 @@
+#ifndef __SecondScene_H__
+#define __SecondScene_H__
+
+#include "StartScene.h"
+#include "player.h"
+#include "cocos2d.h"
+#include "MainScene.h"
+#include "Music.h"
+USING_NS_CC;
+
+class player;
+class Music;
+class MainScene;
+class SecondScene :public Layer{
+public:
+	static Scene * createScene();
+	virtual bool init();
+	CREATE_FUNC(SecondScene);
+
+
+
+	void initPlayer();
+	virtual void onEnter();
+	void setPlayerPosition(float x, float y);	//设置主角的位置
+	void setViewpointCenter(CCPoint position);	//移动视野中心
+	virtual void update(float dt);				//更新 需要写一行this->scheduleUpdate();
+	void Move(int key);							//移动玩家
+	virtual void onKeyPressed(EventKeyboard::KeyCode keyCode, Event* event);//响应键盘事件
+	void ControlPlayerOnCenter();
+	CCPoint tileCoordForPosition(CCPoint position);//得到下个坐标位置
+	void gameOver();							//死亡
+	EventListenerKeyboard *listener;			//键盘监听
+
+
+	//星星总数
+	int starsum;
+	int getStarNum();
+	void getSevenStars();
+
+	//星星特效
+	Sprite *star;
+	void StarAni(Point pos);
+	void removeStar();
+
+	//对话是否开启
+	bool isDialog;
+	void checkdialog();
+
+	//音乐
+	bool isPlayEffect;
+	bool isPlayMusic;
+
+
+	//时间
+	bool flag;
+	int curTime;
+	void GetTime(int curtime);
+private:
+	
+	CCTMXTiledMap*  _tileMap;
+	TMXLayer *_meta;
+	TMXLayer *_Star; //星星层
+	TMXLayer *_bridge; //桥
+	//人物行走图
+	CCSpriteFrame *frame_1;
+	CCSpriteFrame *frame_2;
+	CCSpriteFrame *frame_3;
+	CCSpriteFrame *frame_4;
+	//黑色遮罩
+	Sprite *lightpic;
+	//人物设置
+	player *_player;
+	//音乐
+	Music *_music;
+
+};
+#endif
+
+
+#include "SecondScene.h"
+
+Scene *SecondScene::createScene()
+{
+	auto scene = Scene::create();
+	auto layer = SecondScene::create();
+	scene->addChild(layer);
+	return scene;
+}
+
+bool SecondScene::init()
+{
+	curTime = 0;
+	flag = false;
+	starsum = 0;			//初始化星星总数
+	isDialog = false;		//初始化对话
+	isPlayEffect = true;
+	isPlayMusic = true;
+	Size visibleSize = Director::getInstance()->getVisibleSize();
+	Point origin = Director::getInstance()->getVisibleOrigin();
+	CCSpriteFrameCache * cache = CCSpriteFrameCache::sharedSpriteFrameCache();
+
+	//角色行走图
+	cache->addSpriteFramesWithFile("player/playerS.plist");
+	frame_1 = CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName("front.png");
+	frame_2 = CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName("left.png");
+	frame_3 = CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName("right.png");
+	frame_4 = CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName("back.png");
+
+	//获取tmx资源
+	_tileMap = CCTMXTiledMap::create("map/scene_2.tmx");
+	addChild(_tileMap);
+
+	//墙壁，不可通过区域
+	_meta = _tileMap->getLayer("obstacle");
+	_meta->setVisible(false);
+
+	//音乐
+	_music = Music::create();
+	addChild(_music);
+	_music->playGameMusic();
+	//星星
+	_Star = _tileMap->getLayer("stars");
+	//桥
+	_bridge = _tileMap->getLayer("bridge");
+	_bridge->setVisible(false);
+	//角色创建
+	initPlayer();
+
+	this->scheduleUpdate();
+	return true;
+}
+
+void SecondScene::initPlayer()
+{
+
+	//在tmx文件中取得player的位置
+	auto objGroup = _tileMap->getObjectGroup("player");
+	auto playerPointDic = objGroup->getObject("playerx");
+	_player = player::create();
+	_player->playerX = playerPointDic.at("x").asFloat();
+	_player->playerY = playerPointDic.at("y").asFloat();
+
+	_player->bindSprite(frame_1);
+
+	//光亮贴图
+	lightpic = Sprite::create("light.png");
+	//位置
+	lightpic->setPosition(ccp(_player->playerX, _player->playerY));
+	//键盘监听
+	listener = EventListenerKeyboard::create();									//添加键盘监听
+	listener->onKeyPressed = CC_CALLBACK_2(SecondScene::onKeyPressed, this);			//创建pressed函数
+	EventDispatcher *eventDispatcher = Director::getInstance()->getEventDispatcher();
+	eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+	addChild(_player);
+	addChild(lightpic);
+	
+	setTouchEnabled(true);
+
+}
+
+void SecondScene::onEnter()
+{
+	Layer::onEnter();
+}
+
+void SecondScene::onKeyPressed(EventKeyboard::KeyCode keyCode, Event* event)
+{
+	int x = _player->playerX;
+	int y = _player->playerY;
+	switch (keyCode)
+	{
+		//地图左下角为（0，0）
+	case EventKeyboard::KeyCode::KEY_UP_ARROW:
+	{
+		 y += 32; _player->bindSprite(frame_4); setPlayerPosition(x, y);
+	}  
+		break;	//上
+	case EventKeyboard::KeyCode::KEY_DOWN_ARROW:
+	{
+		 y -= 32;  _player->bindSprite(frame_1); setPlayerPosition(x, y); 
+	} 
+		break;//下
+	case EventKeyboard::KeyCode::KEY_LEFT_ARROW:
+	{
+		 x -= 32;  _player->bindSprite(frame_2); setPlayerPosition(x, y); 
+	}
+		break;//←
+	case EventKeyboard::KeyCode::KEY_RIGHT_ARROW:
+	{
+		x += 32; _player->bindSprite(frame_3); setPlayerPosition(x, y);
+	}
+		break;//右
+	default:
+		break;
+	}
+
+}
+
+void SecondScene::update(float dt)
+{
+	ControlPlayerOnCenter();
+	lightpic->setPosition(ccp(_player->playerX, _player->playerY));
+}
+
+//地图随主角的滚动
+void SecondScene::ControlPlayerOnCenter()
+{
+	auto parent = (Layer*)_player->getParent();
+
+	//地图方块的数量  
+	Size mapTiledNum = _tileMap->getMapSize();
+
+	//地图单个格子的大小  
+	Size tiledSize = _tileMap->getTileSize();
+
+	//地图的大小  
+	Size mapSize = Size::Size(mapTiledNum.width*tiledSize.width, mapTiledNum.height*tiledSize.height);
+
+	//屏幕大小  
+	Size visibleSize = Director::getInstance()->getVisibleSize();
+
+	//主角坐标  
+	auto spritePos = _player->m_sprite->getPosition();
+
+	//如果主角坐标小于屏幕的一半，则取屏幕中点坐标，否则取主角的坐标  
+	float x = MAX(spritePos.x, visibleSize.width / 2);
+	float y = MAX(spritePos.y, visibleSize.height / 2);
+
+	//如果X、Y的坐标大于右上角的极限值，则取极限值的坐标（极限值是指不让地图超过屏幕造成出现黑边的极限坐标）  
+	x = MIN(x, mapSize.width - visibleSize.width / 2);
+	y = MIN(y, mapSize.height - visibleSize.height / 2);
+	//目标点  
+	auto destPos = Point(x, y);
+
+	//屏幕中点
+	auto centerPos = Point(visibleSize.width / 2, visibleSize.height / 2);
+	auto viewPos = centerPos.operator-(destPos);
+	parent->setPosition(viewPos);
+
+}
+
+CCPoint SecondScene::tileCoordForPosition(CCPoint position)
+{
+	int x = position.x / _tileMap->getTileSize().width;
+	int y = ((_tileMap->getMapSize().height * _tileMap->getTileSize().height) - position.y) / _tileMap->getTileSize().height;
+	CCLOG("%d,%d", x, y);
+	if (x==0&&y==6)
+	{
+		isDialog = true;
+		_music->playDialogMusic();
+	}
+	else
+	{
+		isDialog = false;
+	}
+	if (x==2&&y==30)
+	{
+		flag = 1;
+		_player->setVisible(false);
+		
+		
+	}
+	return ccp(x, y);
+}
+
+void SecondScene::GetTime(int curtime)
+{
+	
+	curTime = curtime; 
+	CCLOG("time2 %d", curTime);
+	auto _calculate = Calculate::create();
+	_calculate->getCurLevel(1, curTime);
+	
+	Director::getInstance()->replaceScene(_calculate);
+
+}
+
+void SecondScene::setPlayerPosition(float x, float y)
+{
+	Point tileCoord = this->tileCoordForPosition(ccp(x, y));
+	int tileGid = _meta->getTileGIDAt(tileCoord);
+	int starGid = _Star->getTileGIDAt(tileCoord);
+	int bridgeGid = _bridge->getTileGIDAt(tileCoord);
+
+	//星星碰撞检测
+	if (starGid) {
+		auto starproperties = _tileMap->getPropertiesForGID(starGid).asValueMap();
+		
+		if (!starproperties.empty()) {
+			auto starcollision = starproperties["star"].asString();
+			if ("true" == starcollision) {
+
+				_Star->removeTileAt(tileCoord);
+				if (isPlayEffect)
+				{
+					_music->playStarMusic();
+				}
+				
+				starsum++;
+				getSevenStars();
+				StarAni(tileCoord);
+			}
+		}
+	}
+	
+	//桥检测
+	if (starsum==7&&bridgeGid) {
+		auto bridgeproperties = _tileMap->getPropertiesForGID(bridgeGid).asValueMap();
+		if (!bridgeproperties.empty()) {
+			auto collision = bridgeproperties["bridge"].asString();
+
+			if ("true" == collision) {
+				_player->setPlayerPosition(x, y);
+				return;
+			}
+		}
+	}
+
+	//碰撞墙壁检测
+	if (tileGid) {
+		auto properties = _tileMap->getPropertiesForGID(tileGid).asValueMap();
+		if (!properties.empty()) {
+			auto collision = properties["collide"].asString();
+
+			if ("true" == collision) {
+				if (isPlayEffect)
+				{
+					_music->playCollideMusic();
+				}
+				
+				return;
+			}
+		}
+	}
+
+
+	_player->setPlayerPosition(x, y);
+}
+
+int SecondScene::getStarNum()
+{
+	return starsum;
+}
+
+
+void SecondScene::StarAni(Point pos)
+{
+	star = Sprite::create("GameScene/stars.png");
+	star->setPosition(ccp(pos.x*_tileMap->getTileSize().width+10, _player->playerY+10));
+	addChild(star);
+	auto Rotate = RotateBy::create(1, 360);
+	auto Moveto = MoveTo::create(1, ccp(pos.x*_tileMap->getTileSize().width+15, _player->playerY+50));
+	star->runAction(CCSpawn::create(Rotate, Moveto, NULL));			//Spawn 同时执行  Squence顺序执行
+	CCActionInterval* delayaction = CCSequence::create(CCDelayTime::create(1),
+		CCCallFunc::create(this, callfunc_selector(SecondScene::removeStar)),
+		NULL
+		);
+	star->runAction(delayaction);
+}
+
+void SecondScene::removeStar()
+{
+	star->setVisible(false);
+}
+
+void SecondScene::gameOver()
+{
+	Director::getInstance()->replaceScene(GameOver::createScene());
+}
+
+//集齐七颗星星
+void SecondScene::getSevenStars()
+{
+	if (starsum == 7)
+	{
+		lightpic->setVisible(false);
+		_bridge->setVisible(true);
+		_music->playBridge();
+		if (isPlayMusic)
+		{
+			_music->changeLevel_2();
+		}
+	}
+}
+
