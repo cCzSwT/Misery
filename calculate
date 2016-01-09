@@ -1,0 +1,133 @@
+#ifndef _CALCULATE_H_
+#define _CALCULATE_H_
+
+#include "cocos2d.h"
+#include "cocostudio/CocoStudio.h"
+#include "ui/CocosGUI.h"
+#include "StartScene.h"
+
+USING_NS_CC;
+class StartScene;
+using namespace cocos2d::ui;
+class Calculate: public cocos2d::Scene
+{
+public:
+	virtual bool init();
+	CREATE_FUNC(Calculate);
+	static Scene* createScene();
+	void getCurLevel(int currentLevel,int totalTime);
+	int curLevel;
+	CCLabelAtlas *pNumTime;
+	int toltime;
+private:
+	void return_Start(Ref* pSender, Widget::TouchEventType type);
+	void NextScene(Ref* pSender, Widget::TouchEventType type);
+	
+	Button* returnBtn;
+	Button* provokeBtn;
+};
+
+
+#endif
+
+
+#include "Calculate.h"
+
+Scene *Calculate::createScene()
+{
+	auto scene = Scene::create();
+	auto layer = Calculate::create();
+	scene->addChild(layer);
+	return scene;
+}
+
+bool Calculate::init()
+{
+	auto rootNode = CSLoader::createNode("csb/Time.csb");
+	addChild(rootNode);
+
+	returnBtn = dynamic_cast<Button*>(rootNode->getChildByName("return"));
+	returnBtn->addTouchEventListener(CC_CALLBACK_2(Calculate::return_Start, this));
+
+	provokeBtn = dynamic_cast<Button*>(rootNode->getChildByName("provoke"));
+	provokeBtn->addTouchEventListener(CC_CALLBACK_2(Calculate::NextScene, this));
+
+
+
+	return true;
+}
+
+void Calculate::return_Start(Ref* pSender, Widget::TouchEventType type)
+{
+
+	switch (type)
+	{
+
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+										  auto _startScene = StartScene::create();
+										 // auto replaceScene = TransitionProgressRadialCW::create(2, _startScene);
+										  Director::getInstance()->replaceScene(_startScene);
+	}
+		break;
+
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+											 log("Cancel !");
+
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+void Calculate::getCurLevel(int currentLevel, int totalTime)
+{
+	curLevel = currentLevel;
+	toltime = totalTime;
+	pNumTime = CCLabelAtlas::create("0000", "fonts/fonts.plist");
+	addChild(pNumTime, 1000, 3000);
+	char StringOfNum[40];
+	
+	sprintf(StringOfNum, "%04d", toltime);//d前面的数字指的是占几位
+	CCLabelAtlas* pNumLabl = static_cast<CCLabelAtlas *>(getChildByTag(3000));
+	pNumLabl->setScaleX(0.7);
+	pNumLabl->setScaleY(0.8);
+	pNumLabl->setPosition(ccp(317,320));
+	pNumLabl->setString(StringOfNum);
+}
+
+void Calculate::NextScene(Ref* pSender, Widget::TouchEventType type)
+{
+
+	switch (type)
+	{
+
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+			auto _mainScene = MainScene::create();
+			//auto replaceScene = TransitionFadeBL::create(3, _mainScene);
+			_mainScene->GetLevel(curLevel + 1);
+			Director::getInstance()->replaceScene(_mainScene);
+	}
+		break;
+
+
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+											 log("Cancel !");
+
+	}
+		break;
+	default:
+		break;
+	}
+		
+
+}
