@@ -1,0 +1,276 @@
+#ifndef _Music_H
+#define _Music_H
+
+#include "cocos2d.h"
+#include "cocostudio/CocoStudio.h"
+#include "ui/CocosGUI.h"
+#include "SimpleAudioEngine.h"
+USING_NS_CC;
+using namespace cocos2d::ui;
+
+class SimpleAudioEngine;
+class Music : public cocos2d::Layer
+{
+public:
+	
+	virtual bool init();
+	CREATE_FUNC(Music);
+	//virtual void update(float dt);
+	void SetScene(int id);
+	void onResponse();		//响应各个按钮
+	void closeUI(Ref* pSender, Widget::TouchEventType type);			//关闭界面
+	void changeMusicState(Ref* sender, CheckBoxEventType type);			//背景音乐开关
+	void changbgmusicvolume(cocos2d::Ref *pSender, SliderEventType type);
+	void changeEffectMusicState(Ref* sender, CheckBoxEventType type);
+	void playCollideMusic();											//播放碰撞音效
+	void playDialogMusic();												//播放对话音效
+	void playStarMusic();												//播放星星音效
+
+	void playGameMusic();												//游戏背景声效	
+	void level2dialog();												//对话声效
+	void windbell();
+	void UIClick();														//UI点击声效
+	void playSuccessMusic();
+	void returnto();
+	//集齐星星后更换音乐
+	void changeLevel_1();
+	void changeLevel_2();
+	void changeLevel_3();
+	void playBridge();
+	bool isPlay;
+	bool isPlayEffectMusic;
+private:
+	Layer *UILayer;
+
+
+};
+
+
+#endif
+
+
+#include "Music.h"
+
+#define  START_MUSIC "Music/start.mp3"
+#define  COLLIDE_MUSIC  "Music/collision.wav"
+#define  DIALOG_MUSIC "Music/dialog.wav"
+#define  STAR_MUSIC "Music/star.wav"
+#define  GAME_MUSIC "Music/GameBG.mp3"
+#define  LEVEL_1_MUSIC "Music/Level_1.mp3"
+#define  LEVEL_2_MUSIC "Music/Level_2.mp3"
+#define  LEVEL_3_MUSIC "Music/Level_3.mp3"
+#define  LEVEL_2_DIALOG "Music/level2_dialog.wav"
+#define  BRIDGE_MUSIC "Music/bridge.wav"
+#define  CLICK_BUTTON "Music/clickbutton.wav"
+#define  WINDBELL_MUSIC "Music/windbell.wav"
+#define	 SUCCESS_MUSIC "Music/success.mp3"
+#define  RETURN_MUSIC "Music/return.wav"
+bool Music::init()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic(START_MUSIC);
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic(COLLIDE_MUSIC);
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic(LEVEL_1_MUSIC);
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic(LEVEL_2_MUSIC);
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic(LEVEL_3_MUSIC);
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic(GAME_MUSIC);
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->preloadBackgroundMusic(SUCCESS_MUSIC);
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->preloadEffect(LEVEL_2_DIALOG);
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->preloadEffect(DIALOG_MUSIC);
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->preloadEffect(WINDBELL_MUSIC);
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->preloadEffect(STAR_MUSIC);
+	
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playBackgroundMusic(START_MUSIC, true);
+	isPlay = true;
+	isPlayEffectMusic = true;
+	return true;
+}
+
+void Music::SetScene(int id)
+{
+	switch (id)
+	{
+	case 0:
+	{
+			UILayer = Layer::create();
+			addChild(UILayer);
+			auto _music = CSLoader::createNode("csb/Music.csb");
+			_music->setPosition(ccp(0, 0));
+			UILayer->addChild(_music);
+			//屏蔽下层点击事件
+			UILayer->setTouchEnabled(true);
+			UILayer->setSwallowsTouches(true);
+			UILayer->setTouchMode(kCCTouchesOneByOne);
+			auto musiclayout = dynamic_cast<Layout*>(_music->getChildByName("Music"));
+			auto colse_button = dynamic_cast<Button*>(musiclayout->getChildByName("close"));
+			auto isMusicOpen = dynamic_cast<CheckBox*>(musiclayout->getChildByName("IsMusic"));
+			auto EffectMusic = dynamic_cast<CheckBox*>(musiclayout->getChildByName("IsEffect"));
+			auto bgmusicSlider = dynamic_cast<Slider*>(musiclayout->getChildByName("Music"));
+		
+			isMusicOpen->setSelected(true);
+			isMusicOpen->addEventListenerCheckBox(this, checkboxselectedeventselector(Music::changeMusicState));
+			EffectMusic->addEventListenerCheckBox(this, checkboxselectedeventselector(Music::changeEffectMusicState));
+			bgmusicSlider->addEventListenerSlider(this, sliderpercentchangedselector(Music::changbgmusicvolume));
+			colse_button->addTouchEventListener(CC_CALLBACK_2(Music::closeUI, this)); 
+			
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+//关闭界面
+void Music::closeUI(Ref* pSender, Widget::TouchEventType type)
+{
+
+	switch (type)
+	{
+
+		//松开按钮
+	case Widget::TouchEventType::ENDED:
+	{
+
+										  this->removeChild(UILayer);
+	}
+		break;
+		//取消按钮
+	case Widget::TouchEventType::CANCELED:
+	{
+											 log("Cancel !");
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+//checkbox 音乐按钮
+void Music::changeMusicState(Ref* sender, CheckBoxEventType type)
+{
+	switch (type)
+	{
+	case CHECKBOX_STATE_EVENT_SELECTED:
+		if (isPlay==false)
+		{
+			CocosDenshion::SimpleAudioEngine::sharedEngine()->playBackgroundMusic(START_MUSIC, true);
+			isPlay = true;
+		}
+		break;
+	case CHECKBOX_STATE_EVENT_UNSELECTED:
+		if (isPlay==true)
+		{
+			CocosDenshion::SimpleAudioEngine::sharedEngine()->stopBackgroundMusic(START_MUSIC);
+			isPlay = false;
+		}
+		break;
+	default:
+		break;
+	}
+	
+}
+
+//checkbox 音效按钮
+void Music::changeEffectMusicState(Ref* sender, CheckBoxEventType type)
+{
+	
+	switch (type)
+	{
+	case CHECKBOX_STATE_EVENT_SELECTED:
+		
+		isPlayEffectMusic = true;
+		break;
+	case CHECKBOX_STATE_EVENT_UNSELECTED:
+		
+		isPlayEffectMusic = false;
+		
+		break;
+	default:
+		break;
+	}
+	
+}
+
+void Music::changbgmusicvolume(cocos2d::Ref *pSender, SliderEventType type)
+{
+	if (type == SLIDER_PERCENTCHANGED&&isPlay) {
+		Slider* slider = dynamic_cast<Slider*>(pSender);
+		float percent = slider->getPercent();
+		CocosDenshion::SimpleAudioEngine::sharedEngine()->setBackgroundMusicVolume(percent);
+	}
+}
+
+//播放碰撞音效
+void Music::playCollideMusic()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playEffect(COLLIDE_MUSIC, false);
+}
+
+//播放对话音效
+void Music::playDialogMusic()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->setEffectsVolume(0.5);
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playEffect(DIALOG_MUSIC, false);
+}
+
+//播放星星音效
+void Music::playStarMusic()
+{
+	
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playEffect(STAR_MUSIC, false);
+}
+
+void Music::changeLevel_1()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playBackgroundMusic(LEVEL_1_MUSIC, true);
+}
+
+void Music::changeLevel_2()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playBackgroundMusic(LEVEL_2_MUSIC, true);
+}
+
+void Music::changeLevel_3()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playBackgroundMusic(LEVEL_3_MUSIC, true);
+}
+
+void Music::playGameMusic()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playBackgroundMusic(GAME_MUSIC, true);
+}
+
+void Music::playSuccessMusic()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playBackgroundMusic(SUCCESS_MUSIC, true);
+}
+
+void Music::level2dialog()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playEffect(LEVEL_2_DIALOG, false);
+}
+
+void Music::playBridge()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playEffect(BRIDGE_MUSIC, false);
+}
+
+void Music::UIClick()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playEffect(CLICK_BUTTON, false);
+}
+
+void Music::windbell()
+{
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playEffect(WINDBELL_MUSIC, false);
+}
+
+void Music::returnto()
+{
+	
+	CocosDenshion::SimpleAudioEngine::sharedEngine()->playEffect(RETURN_MUSIC, false);
+}
