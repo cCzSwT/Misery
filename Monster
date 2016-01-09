@@ -1,0 +1,77 @@
+#ifndef __Monster_H
+#define __Monster_H
+
+
+#include "cocos2d.h"
+
+USING_NS_CC;
+
+class Monster : public  cocos2d::Layer
+{
+public:
+	Monster();
+	~Monster();
+	CREATE_FUNC(Monster);
+	virtual bool init();
+	void InitMonster();
+
+	
+	CCTMXTiledMap*  _map;
+	Sprite *monster_1;
+	int monster_1_x;
+	int monster_1_y;
+	int monster1_v;
+
+	Sprite *monster_2;
+	int monster_2_x;
+	int monster_2_y;
+	int monster2_v;
+private:
+
+
+
+};
+
+#endif
+
+#include "monster.h"
+
+Monster::Monster()
+{}
+
+Monster::~Monster()
+{}
+
+bool Monster::init()
+{
+	monster1_v = 1;
+	monster2_v = 1;
+	InitMonster();
+	return true;
+}
+
+
+void Monster::InitMonster()
+{
+	_map = CCTMXTiledMap::create("map/scene_1.tmx");
+	auto objGroup = _map->getObjectGroup("monster");
+
+	auto playerPointDic = objGroup->getObject("monster_1");
+	monster_1 = Sprite::create("rabbit.png");
+	monster_1_x = playerPointDic.at("x").asFloat();
+	monster_1_y = playerPointDic.at("y").asFloat();
+	monster_1->setPosition(ccp(monster_1_x, monster_1_y));
+
+	playerPointDic = objGroup->getObject("monster_2");
+	monster_2 = Sprite::create("rabbit.png");
+	monster_2_x = playerPointDic.at("x").asFloat();
+	monster_2_y = playerPointDic.at("y").asFloat();
+	monster_2->setPosition(ccp(monster_2_x, monster_2_y));
+
+
+	addChild(monster_1);
+	addChild(monster_2);
+	
+}
+
+
